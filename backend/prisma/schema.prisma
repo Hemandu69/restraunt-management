@@ -1,0 +1,33 @@
+// Prisma schema for the Restaurant Management System
+// Phase 1: only the User model required for Authentication & Role Hierarchy.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // SQLite is used for local development so the project runs with zero
+  // external services. Swap DATABASE_URL + provider to "postgresql" for
+  // production without changing application code.
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite has no native enum type, so Role/UserStatus are stored as TEXT and
+// constrained at the database level with CHECK constraints (added by hand to
+// the generated migration SQL - see prisma/migrations/*/migration.sql).
+// The canonical enum values live in src/constants/roles.ts on the app side.
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String
+  status       String    @default("ACTIVE")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLoginAt  DateTime?
+
+  @@index([role])
+  @@index([status])
+}

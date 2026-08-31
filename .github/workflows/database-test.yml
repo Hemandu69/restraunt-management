@@ -1,0 +1,40 @@
+name: Database Tests
+
+# Runs entirely against an ephemeral, local Supabase stack inside the
+# runner - it never touches the linked/production project, so no
+# Supabase secrets are needed here at all.
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "supabase/**"
+      - ".github/workflows/database-test.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase stack
+        run: supabase start
+
+      - name: Reset local database (apply every migration + seed from scratch)
+        run: supabase db reset
+
+      - name: Sanity-check local migration history
+        run: supabase migration list --local
+
+      - name: Run pgTAP database tests
+        run: supabase test db
+
+      - name: Stop Supabase stack
+        if: always()
+        run: supabase stop

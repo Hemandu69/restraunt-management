@@ -1,0 +1,6 @@
+# Supabase CLI local state - never commit, always regenerated locally.
+.branches
+.temp
+
+# Local env overrides for `supabase start` / CLI commands, if ever used.
+.env

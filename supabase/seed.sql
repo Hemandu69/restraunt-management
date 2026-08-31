@@ -1,0 +1,7 @@
+-- Runs after migrations during `supabase db reset`.
+--
+-- Intentionally empty for this phase: we never insert directly into
+-- auth.users (that's Supabase Auth's job, not ours), and there is no other
+-- safe, non-auth data to seed yet. Once menu/sales tables exist, add
+-- non-sensitive sample data (e.g. a couple of menu categories) here -
+-- never credentials, tokens, or a fabricated Manager account.
