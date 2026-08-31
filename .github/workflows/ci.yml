@@ -1,0 +1,123 @@
+name: CI
+
+# Quality gate for every PR into main. Three independent jobs run in
+# parallel - frontend, backend, database - each using only ephemeral/local
+# resources. None of them touch the production Supabase project or need any
+# production secret; SUPABASE_DB_PASSWORD in particular must never appear
+# here (see database-deploy.yml, which is the only workflow allowed to use
+# it).
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      # frontend/package.json and backend/package.json are already covered
+      # by their own directory globs - there is no root-level package.json
+      # in this repo (frontend/ and backend/ are independent npm packages,
+      # not an npm workspace), so no separate root manifest entry is needed.
+      - "frontend/**"
+      - "backend/**"
+      - "supabase/**"
+      - ".github/workflows/**"
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # frontend/package.json's only configured lint script.
+      - name: Lint
+        run: npm run lint
+
+      # `tsc -b && vite build` - type-checks the whole project (fails on any
+      # TS error) and then produces the production bundle in one step.
+      # There is no separate `typecheck` script because it would just
+      # duplicate the first half of this command; there is no frontend test
+      # script/framework in this repo yet, so no test step is invented here.
+      - name: Type-check and build
+        run: npm run build
+
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # No lint script is configured in backend/package.json, so none is
+      # invented here.
+      # Runs against a throwaway SQLite file (backend/prisma/test.db),
+      # configured entirely by the committed backend/.env.test (a
+      # non-secret, test-only JWT signing key) - no production database,
+      # no Supabase, no secrets of any kind.
+      - name: Run tests
+        run: npm test
+
+      # `tsc -p tsconfig.json && prisma generate` - type-checks (fails on
+      # any TS error), compiles to dist/, and regenerates the Prisma client
+      # against the committed schema. Proves the backend is deployable.
+      - name: Type-check and build
+        run: npm run build
+
+  database:
+    name: Database CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase stack
+        run: supabase start
+
+      - name: Reset local database (apply every migration + seed from scratch)
+        run: supabase db reset
+
+      - name: Sanity-check local migration history
+        run: supabase migration list --local
+
+      - name: Run pgTAP database tests
+        run: supabase test db
+
+      - name: Stop Supabase stack
+        if: always()
+        run: supabase stop

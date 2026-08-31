@@ -4,7 +4,11 @@ dist/
 *.log
 .DS_Store
 
-# Never commit real environment files.
+# Never commit real environment files. Deliberately narrow (not a blanket
+# `.env*`) so `backend/.env.test` stays tracked - it holds only a
+# non-secret, test-only value, not a real credential.
 .env
 .env.local
-!*.env.example
+.env.production
+.env.*.local
+!.env.example

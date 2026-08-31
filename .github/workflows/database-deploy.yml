@@ -1,9 +1,9 @@
 name: Database Deploy
 
 # Deploys migrations to the linked production Supabase project. Only ever
-# triggered by a push to `main` (i.e. after a PR - and this workflow's own
-# database-test.yml run - has already merged), and only when
-# database-related files actually changed.
+# triggered by a push to `main` (i.e. after a PR - and ci.yml's database
+# job - has already passed and merged), and only when database-related
+# files actually changed.
 #
 # Never runs `supabase db reset --linked` or any other destructive command
 # against the linked project - only `supabase db push`, which applies
@@ -21,6 +21,9 @@ concurrency:
   group: database-deploy-production
   cancel-in-progress: false
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -36,11 +39,19 @@ jobs:
         with:
           version: latest
 
+      # Secrets are passed via `env:` and read back as shell variables
+      # rather than interpolated directly into the script with `${{ }}` -
+      # if a secret value ever contained a quote/backtick/`$(...)`, direct
+      # interpolation could break out of the intended argument and inject
+      # commands into the runner. `env:` avoids that entirely.
       - name: Link the production Supabase project
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_ID }}
+          DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
         run: |
           supabase link \
-            --project-ref "${{ secrets.SUPABASE_PROJECT_ID }}" \
-            --password "${{ secrets.SUPABASE_DB_PASSWORD }}"
+            --project-ref "$PROJECT_REF" \
+            --password "$DB_PASSWORD"
 
       - name: Verify remote migration history before deploying
         run: supabase migration list --linked

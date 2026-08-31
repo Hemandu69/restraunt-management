@@ -6,6 +6,7 @@ import * as waitersApi from "../api/waiters";
 import type { User } from "../types/user";
 import { Modal } from "../components/Modal";
 import { Alert } from "../components/Alert";
+import { useToast } from "../context/ToastContext";
 import { RoleBadge } from "../components/Badge";
 import { Avatar } from "../components/Avatar";
 import { EmptyState } from "../components/EmptyState";
@@ -24,10 +25,10 @@ const EMPTY_CREATE_FORM: CreateFormState = { name: "", email: "", password: "" }
 // future account administration, but nothing here writes to it).
 export function WaitersPage() {
   const { user: currentUser } = useAuth();
+  const toast = useToast();
   const [users, setUsers] = useState<User[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateFormState>(EMPTY_CREATE_FORM);
@@ -58,12 +59,6 @@ export function WaitersPage() {
     loadWaiters();
   }, [loadWaiters]);
 
-  useEffect(() => {
-    if (!banner) return;
-    const timer = setTimeout(() => setBanner(null), 4000);
-    return () => clearTimeout(timer);
-  }, [banner]);
-
   const createEmailValid = /^\S+@\S+\.\S+$/.test(createForm.email);
   const createNameValid = createForm.name.trim().length > 0;
   const createPasswordValid = createForm.password.length >= 8;
@@ -87,7 +82,7 @@ export function WaitersPage() {
       await waitersApi.createWaiter(createForm);
       const name = createForm.name;
       closeCreate();
-      setBanner({ type: "success", text: `${name} was added as a waiter.` });
+      toast.success(`${name} was added as a waiter.`);
       await loadWaiters();
     } catch (err) {
       setCreateError(getApiErrorMessage(err, "Could not create the waiter account."));
@@ -115,7 +110,7 @@ export function WaitersPage() {
     try {
       await waitersApi.updateWaiter(editingUser.id, editForm);
       setEditingUser(null);
-      setBanner({ type: "success", text: `${editForm.name}'s details were updated.` });
+      toast.success(`${editForm.name}'s details were updated.`);
       await loadWaiters();
     } catch (err) {
       setEditError(getApiErrorMessage(err, "Could not update this waiter."));
@@ -138,12 +133,7 @@ export function WaitersPage() {
         </button>
       </div>
 
-      {banner && <Alert tone={banner.type}>{banner.text}</Alert>}
-
-      <div
-        className="card"
-        style={{ marginTop: banner ? "1rem" : 0, padding: isLoading || loadError || !hasUsers ? "1.5rem" : 0 }}
-      >
+      <div className="card" style={{ padding: isLoading || loadError || !hasUsers ? "1.5rem" : 0 }}>
         {isLoading && <WaitersTableSkeleton />}
 
         {!isLoading && loadError && (

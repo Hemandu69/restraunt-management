@@ -56,8 +56,8 @@ restaurant-management-system/
 │   └── scripts/
 │       └── promote-to-manager.mjs   Controlled first-Manager provisioning
 ├── .github/workflows/
-│   ├── database-test.yml     Runs on every PR to main - local stack, migrations, pgTAP
-│   └── database-deploy.yml   Runs on push to main - deploys migrations to production
+│   ├── ci.yml                 Quality gate on every PR - frontend/backend/database jobs, all in parallel
+│   └── database-deploy.yml    Runs on push to main - deploys migrations to production
 └── restaurant_management_system_requirements*.{md,xlsx}   source-of-truth spec
 ```
 
@@ -306,8 +306,35 @@ Part 1's own variables):
 
 | Workflow | Trigger | What it does |
 |---|---|---|
-| `.github/workflows/database-test.yml` | `pull_request` → `main` (when `supabase/**` changed) | Boots an ephemeral local Supabase stack in the runner, runs `db reset` (full migration replay) and `supabase test db` (pgTAP). Fails the PR on any migration or test failure. Touches only the runner's local Docker containers — never the linked project, so it needs no secrets. |
+| `.github/workflows/ci.yml` | `pull_request` → `main` (when `frontend/`, `backend/`, `supabase/`, or the workflows themselves changed) | Three independent, parallel jobs: **frontend** (`npm ci` → lint → `tsc -b && vite build`), **backend** (`npm ci` → `npm test` against a throwaway SQLite file → `tsc` + `prisma generate`), **database** (ephemeral local Supabase stack → `db reset` → `migration list --local` → `supabase test db` → `supabase stop`, the last step running even on failure). None of the three needs any secret or touches the production Supabase project — the whole workflow is safe to run on any PR. |
 | `.github/workflows/database-deploy.yml` | `push` → `main` (when `supabase/migrations/**` or `config.toml` changed) | Links the production project and runs `supabase migration list --linked` (sanity check) then `supabase db push --linked`. Never runs `db reset` against the linked project. |
+
+There is currently no CI step (and no config file anywhere in this repo) for
+deploying the frontend or backend to any hosting provider — no Vercel or
+Render configuration exists yet. Once one is added, whether GitHub Actions
+drives that deployment or a connected hosting provider does it automatically
+on merge should be documented here explicitly, matching whichever is
+actually true — don't assume the diagram below happens by magic.
+
+```
+Pull Request
+     │
+     ▼
+   ci.yml
+     │
+┌────┼────┬────────┐
+▼    ▼    ▼
+Frontend Backend Database
+  CI      CI       CI
+└────┼────┴────────┘
+     ▼
+ ALL PASS → merge to main
+     │
+     ▼
+database-deploy.yml → supabase db push --linked → production database
+
+(Frontend/backend application deployment: not yet configured - see above.)
+```
 
 ### Required GitHub secrets
 
@@ -328,7 +355,7 @@ schema idea to production is:
 
 ```
 developer → new migration → tested locally (db reset + test db)
-   → committed → PR → database-test.yml passes → merge to main
+   → committed → PR → ci.yml's database job passes → merge to main
    → database-deploy.yml runs `db push` → production
 ```
 

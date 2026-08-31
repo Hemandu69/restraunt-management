@@ -1,7 +1,5 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Alert } from "../components/Alert";
-import { useDeniedNotice } from "../lib/useDeniedNotice";
 
 // The Manager's primary question is "how is my restaurant doing?" - future
 // phases add real KPIs here (today's revenue, completed sales, order
@@ -11,7 +9,6 @@ import { useDeniedNotice } from "../lib/useDeniedNotice";
 // intentionally NOT an operational POS screen - that's Tables, for Waiters.
 export function ManagerDashboardPage() {
   const { user } = useAuth();
-  const deniedNotice = useDeniedNotice();
 
   return (
     <div className="page">
@@ -22,9 +19,7 @@ export function ManagerDashboardPage() {
         </div>
       </div>
 
-      {deniedNotice && <Alert tone="info">{deniedNotice}</Alert>}
-
-      <div className="card stack" style={{ marginTop: deniedNotice ? "1rem" : 0 }}>
+      <div className="card stack">
         <div>
           <h2>Waiter Management</h2>
           <p className="muted" style={{ marginBottom: "0.75rem" }}>
