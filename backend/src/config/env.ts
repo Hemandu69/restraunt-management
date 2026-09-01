@@ -19,4 +19,12 @@ export const env = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "1d",
   authCookieName: process.env.AUTH_COOKIE_NAME ?? "rms_token",
   isProduction: process.env.NODE_ENV === "production",
+
+  // Payments live in Supabase Postgres (see the payments table migration
+  // for why), accessed here with the service-role key which bypasses RLS -
+  // never send this value to the frontend.
+  supabaseUrl: required("SUPABASE_URL"),
+  supabaseSecretKey: required("SUPABASE_SECRET_KEY"),
+
+  paymentExpiryMinutes: Number(process.env.PAYMENT_EXPIRY_MINUTES ?? 10),
 };

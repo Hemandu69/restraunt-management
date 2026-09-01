@@ -34,6 +34,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      payments: {
+        Row: {
+          amount: number
+          cancelled_at: string | null
+          created_at: string
+          currency: string
+          expires_at: string
+          id: string
+          order_reference: string
+          paid_at: string | null
+          status: Database["public"]["Enums"]["payment_status"]
+          table_number: number
+          token_hash: string
+          updated_at: string
+          waiter_id: string
+        }
+        Insert: {
+          amount: number
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at: string
+          id?: string
+          order_reference: string
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          table_number: number
+          token_hash: string
+          updated_at?: string
+          waiter_id: string
+        }
+        Update: {
+          amount?: number
+          cancelled_at?: string | null
+          created_at?: string
+          currency?: string
+          expires_at?: string
+          id?: string
+          order_reference?: string
+          paid_at?: string | null
+          status?: Database["public"]["Enums"]["payment_status"]
+          table_number?: number
+          token_hash?: string
+          updated_at?: string
+          waiter_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -72,6 +120,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      payment_status: "PENDING" | "PAID" | "EXPIRED" | "CANCELLED"
       user_role: "MANAGER" | "WAITER"
       user_status: "ACTIVE" | "INACTIVE"
     }
@@ -204,6 +253,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      payment_status: ["PENDING", "PAID", "EXPIRED", "CANCELLED"],
       user_role: ["MANAGER", "WAITER"],
       user_status: ["ACTIVE", "INACTIVE"],
     },

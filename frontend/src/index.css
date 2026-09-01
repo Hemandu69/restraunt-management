@@ -18,6 +18,7 @@
   --color-danger-soft: #fbebea;
 
   --color-success: #1e7a34;
+  --color-success-hover: #166129;
   --color-success-soft: #e7f6ea;
 
   --color-warning: #92600a;
@@ -889,29 +890,61 @@ tbody tr:last-child td {
   flex-shrink: 0;
 }
 
-.table-card.available .table-card-status {
-  color: var(--color-success);
-}
-
-.table-card.available .table-card-dot {
+/* Available/occupied are solid, full-color states (not a tint) - the whole
+   card carries the meaning at a glance from across the room, so text/dot
+   colors are flipped to white for contrast rather than left dark. */
+.table-card.available {
   background: var(--color-success);
-}
-
-.table-card.available:hover {
   border-color: var(--color-success);
 }
 
+.table-card.available .table-card-number {
+  color: var(--color-primary-contrast);
+}
+
+.table-card.available .table-card-status {
+  color: var(--color-primary-contrast);
+}
+
+.table-card.available .table-card-dot {
+  background: var(--color-primary-contrast);
+}
+
+.table-card.available .table-card-order-info {
+  color: var(--color-primary-contrast);
+  opacity: 0.85;
+}
+
+.table-card.available:hover {
+  background: var(--color-success-hover);
+  border-color: var(--color-success-hover);
+}
+
 .table-card.occupied {
-  background: var(--color-warning-soft);
-  border-color: var(--color-warning);
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.table-card.occupied .table-card-number {
+  color: var(--color-primary-contrast);
 }
 
 .table-card.occupied .table-card-status {
-  color: var(--color-warning);
+  color: var(--color-primary-contrast);
 }
 
 .table-card.occupied .table-card-dot {
-  background: var(--color-warning);
+  background: var(--color-primary-contrast);
+}
+
+.table-card.occupied .table-card-order-info {
+  color: var(--color-primary-contrast);
+  opacity: 0.85;
+}
+
+.table-card.occupied:hover {
+  background: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
 }
 
 /* Tertiary info - only rendered when a real current-order total exists for
@@ -1505,4 +1538,164 @@ tbody tr:last-child td {
     transform: translateX(-50%);
     width: calc(100vw - 1.5rem);
   }
+}
+
+/* ================= Waiter QR payment modal ================= */
+
+.qr-payment-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.qr-payment-amount {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0.25rem 0;
+}
+
+.qr-code-frame {
+  padding: 1rem;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.qr-payment-hint {
+  font-size: 0.85rem;
+  max-width: 26ch;
+}
+
+.qr-connection-notice {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+}
+
+.qr-payment-result {
+  padding: 1rem 0;
+}
+
+.qr-payment-result-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  font-size: 1.5rem;
+}
+
+.qr-payment-result.success .qr-payment-result-title {
+  color: var(--color-success);
+}
+
+.qr-payment-result-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+}
+
+/* ================= Public customer payment page ================= */
+/* Isolated from the app shell entirely (no navbar, no app-shell wrapper -
+   see App.tsx) and deliberately minimal: a customer lands here straight
+   from a QR scan and should understand it in one glance. */
+
+.pay-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--color-bg);
+}
+
+.pay-card {
+  width: 100%;
+  max-width: 360px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pay-brand {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+
+.pay-table {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.pay-amount-label {
+  color: var(--color-text-muted);
+  margin-top: 1rem;
+}
+
+.pay-amount {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0.25rem 0 1rem;
+}
+
+.pay-approve-btn {
+  width: 100%;
+  font-size: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.pay-error {
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  margin: 0.25rem 0;
+}
+
+.pay-status-title {
+  font-weight: 600;
+  font-size: 1.15rem;
+  margin: 0.5rem 0;
+}
+
+.pay-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+}
+
+.pay-result-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  font-size: 1.75rem;
+  margin-bottom: 0.25rem;
 }

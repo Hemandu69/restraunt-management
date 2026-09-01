@@ -11,6 +11,8 @@ export const PERMISSIONS = {
   VIEW_WAITERS: "VIEW_WAITERS",
   CREATE_WAITER: "CREATE_WAITER",
   UPDATE_WAITER: "UPDATE_WAITER",
+  CREATE_PAYMENT: "CREATE_PAYMENT",
+  CANCEL_PAYMENT: "CANCEL_PAYMENT",
 } as const;
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -21,11 +23,12 @@ export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 //
 // MANAGER is the overview/management role (waiter administration today;
 // menu/sales/reports management in later phases). WAITER is the operational
-// role - it holds no permissions yet because no operational module (tables,
-// orders, billing) has been built; this is not an oversight.
+// role - it now holds the payment permissions below, its first operational
+// module (tables/orders themselves still have no backend persistence and
+// so still have nothing to authorize here - see TablesPage.tsx).
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   MANAGER: [PERMISSIONS.VIEW_WAITERS, PERMISSIONS.CREATE_WAITER, PERMISSIONS.UPDATE_WAITER],
-  WAITER: [],
+  WAITER: [PERMISSIONS.CREATE_PAYMENT, PERMISSIONS.CANCEL_PAYMENT],
 };
 
 export function getPermissionsForRole(role: Role): Permission[] {

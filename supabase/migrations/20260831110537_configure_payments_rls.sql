@@ -1,0 +1,20 @@
+-- RLS for public.payments.
+--
+-- Every payment operation (create, look up by token, approve, cancel) is
+-- performed by the trusted Express backend using the Supabase service-role
+-- key, which bypasses RLS entirely (see backend/src/config/supabase.ts and
+-- the same pattern already documented in configure_profile_rls.sql). The
+-- frontend - including the public, unauthenticated /pay/:token page - never
+-- talks to Supabase directly; it only ever calls the backend's own REST
+-- API, which does its own authorization (waiter ownership, valid-token
+-- lookup, state-machine checks) before touching this table.
+--
+-- That means the `anon` and `authenticated` Supabase roles have no
+-- legitimate reason to read or write this table at all. Enabling RLS with
+-- zero policies for those roles is a deliberate default-deny: it is not a
+-- placeholder for a permissive `using (true)` policy "to make the feature
+-- work" (explicitly not wanted here) - if someone ever points a Supabase
+-- anon/authenticated client directly at this table, every operation is
+-- rejected, and the feature keeps working exactly the same because it was
+-- never using that path.
+alter table public.payments enable row level security;

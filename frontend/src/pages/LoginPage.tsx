@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { getApiErrorMessage } from "../api/client";
 import { getHomeRouteForRole } from "../lib/roleHome";
 import { Alert } from "../components/Alert";
+import { Logo } from "../components/Logo";
 
 export function LoginPage() {
   const { user, login, isLoading } = useAuth();
@@ -49,8 +50,8 @@ export function LoginPage() {
     <div className="login-shell">
       <form className="card login-card stack" onSubmit={handleSubmit} noValidate>
         <div className="login-brand">
-          <span className="navbar-mark" aria-hidden="true">
-            R
+          <span className="navbar-mark">
+            <Logo size={20} />
           </span>
           <div>
             <h1>Sign in</h1>

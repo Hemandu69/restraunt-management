@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Avatar } from "./Avatar";
+import { Logo } from "./Logo";
 
 interface NavItem {
   to: string;
@@ -47,8 +48,8 @@ export function Navbar() {
   return (
     <header className="navbar">
       <span className="navbar-brand">
-        <span className="navbar-mark" aria-hidden="true">
-          R
+        <span className="navbar-mark">
+          <Logo size={18} />
         </span>
         Restaurant Management
       </span>

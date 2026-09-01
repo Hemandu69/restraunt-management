@@ -1,5 +1,4 @@
 import { Modal } from "../Modal";
-import { Alert } from "../Alert";
 import { calculateTotals, formatInr } from "../../lib/money";
 import type { OrderLine } from "./OrderPanel";
 
@@ -7,13 +6,14 @@ interface BillSummaryModalProps {
   tableNumber: number;
   lines: OrderLine[];
   onClose: () => void;
-  onStartNewOrder: () => void;
+  onPayByQr: () => void;
 }
 
-// Payment is future work (see root README) - this deliberately stops at an
-// itemized summary rather than pretending to process anything. "Start New
-// Order" is the local stand-in for "table becomes available again".
-export function BillSummaryModal({ tableNumber, lines, onClose, onStartNewOrder }: BillSummaryModalProps) {
+// Itemized summary of the current order. "Pay by QR" hands off to
+// QrPaymentModal (see TablesPage), which owns the actual simulated payment
+// session - this component only ever displays what's already known
+// (items/totals), never payment state.
+export function BillSummaryModal({ tableNumber, lines, onClose, onPayByQr }: BillSummaryModalProps) {
   const totals = calculateTotals(lines.map((line) => ({ price: line.item.price, quantity: line.quantity })));
 
   return (
@@ -44,11 +44,9 @@ export function BillSummaryModal({ tableNumber, lines, onClose, onStartNewOrder 
         </div>
       </div>
 
-      <Alert tone="info">Payment is not implemented yet - this bill is not saved anywhere.</Alert>
-
       <div className="table-actions">
-        <button type="button" className="btn btn-primary" onClick={onStartNewOrder}>
-          Start New Order
+        <button type="button" className="btn btn-primary" onClick={onPayByQr}>
+          Pay by QR
         </button>
         <button type="button" className="btn btn-secondary" onClick={onClose}>
           Back to Order

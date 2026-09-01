@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import { env } from "./config/env";
 import authRoutes from "./routes/auth.routes";
 import waitersRoutes from "./routes/waiters.routes";
+import paymentsRoutes from "./routes/payments.routes";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 export function createApp() {
@@ -24,6 +25,7 @@ export function createApp() {
 
   app.use("/api/auth", authRoutes);
   app.use("/api/waiters", waitersRoutes);
+  app.use("/api/payments", paymentsRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

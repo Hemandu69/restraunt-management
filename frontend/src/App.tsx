@@ -8,6 +8,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { ManagerDashboardPage } from "./pages/ManagerDashboardPage";
 import { TablesPage } from "./pages/TablesPage";
 import { WaitersPage } from "./pages/WaitersPage";
+import { PublicPaymentPage } from "./pages/PublicPaymentPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 function RoleBasedRedirect() {
@@ -17,49 +18,59 @@ function RoleBasedRedirect() {
   return <Navigate to={getHomeRouteForRole(user.role)} replace />;
 }
 
-function AppRoutes() {
+// The authenticated application: Navbar, role-gated routes, AuthContext.
+// Deliberately NOT where the public payment page lives - see App() below.
+function AuthedApp() {
   return (
-    <div className="app-shell">
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<RoleBasedRedirect />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["MANAGER"]}>
-              <ManagerDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/waiters"
-          element={
-            <ProtectedRoute allowedRoles={["MANAGER"]}>
-              <WaitersPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/tables"
-          element={
-            <ProtectedRoute allowedRoles={["WAITER"]}>
-              <TablesPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </div>
+    <AuthProvider>
+      <div className="app-shell">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<RoleBasedRedirect />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["MANAGER"]}>
+                <ManagerDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/waiters"
+            element={
+              <ProtectedRoute allowedRoles={["MANAGER"]}>
+                <WaitersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tables"
+            element={
+              <ProtectedRoute allowedRoles={["WAITER"]}>
+                <TablesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </div>
+    </AuthProvider>
   );
 }
 
 export default function App() {
   return (
     <ToastProvider>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <Routes>
+        {/* Public, unauthenticated, isolated from the authenticated app
+            (spec section 7): no AuthProvider, no Navbar, no app-shell - a
+            customer who scans a QR code never touches any of that, even by
+            accident. Must be matched before the authenticated app's own
+            catch-all "*" route. */}
+        <Route path="/pay/:token" element={<PublicPaymentPage />} />
+        <Route path="/*" element={<AuthedApp />} />
+      </Routes>
     </ToastProvider>
   );
 }

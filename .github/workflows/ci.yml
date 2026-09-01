@@ -79,14 +79,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The payments module (see PAYMENT.md) stores data in Supabase
+      # Postgres, not the Prisma/SQLite test.db - backend/tests/payments.test.ts
+      # needs a real local Supabase stack, same as the "database" job below.
+      # Still entirely ephemeral/local: fixed, publicly-documented local CLI
+      # dev credentials (see backend/.env.test), no production secret of any
+      # kind touches this job.
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Supabase stack
+        working-directory: .
+        run: supabase start
+
       # No lint script is configured in backend/package.json, so none is
       # invented here.
-      # Runs against a throwaway SQLite file (backend/prisma/test.db),
-      # configured entirely by the committed backend/.env.test (a
-      # non-secret, test-only JWT signing key) - no production database,
-      # no Supabase, no secrets of any kind.
+      # Auth/waiter tests run against a throwaway SQLite file
+      # (backend/prisma/test.db); payment tests run against the local
+      # Supabase stack started above. Both are configured entirely by the
+      # committed backend/.env.test - no production database, no production
+      # secrets of any kind.
       - name: Run tests
         run: npm test
+
+      - name: Stop local Supabase stack
+        if: always()
+        working-directory: .
+        run: supabase stop
 
       # `tsc -p tsconfig.json && prisma generate` - type-checks (fails on
       # any TS error), compiles to dist/, and regenerates the Prisma client

@@ -8,6 +8,7 @@ import type { OrderLine } from "../components/pos/OrderPanel";
 import { TableSelector } from "../components/pos/TableSelector";
 import { TableAvailabilityToggle } from "../components/pos/TableAvailabilityToggle";
 import { BillSummaryModal } from "../components/pos/BillSummaryModal";
+import { QrPaymentModal } from "../components/pos/QrPaymentModal";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useToast } from "../context/ToastContext";
 import { calculateTotals, formatInr } from "../lib/money";
@@ -16,6 +17,8 @@ import type { OrderStatus, TableAvailability } from "../types/order";
 interface TableOrder {
   status: OrderStatus;
   items: Record<string, number>;
+  /** Opaque, client-generated label for this order - see QrPaymentModal/payment.service.ts for why it's informational only, never trusted for amount or authorization. */
+  orderReference: string;
 }
 
 type TableAvailabilityMap = Record<number, TableAvailability>;
@@ -54,6 +57,7 @@ export function TablesPage() {
   const [ordersByTable, setOrdersByTable] = useState<TableOrders>({});
   const [isOrderPanelOpen, setIsOrderPanelOpen] = useState(false);
   const [isBillOpen, setIsBillOpen] = useState(false);
+  const [isQrPaymentOpen, setIsQrPaymentOpen] = useState(false);
   const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
 
   const currentOrder = selectedTable !== null ? ordersByTable[selectedTable] : undefined;
@@ -89,16 +93,18 @@ export function TablesPage() {
     if (selectedTable === null) return;
     setOrdersByTable((prev) => {
       const existing = prev[selectedTable];
-      // Starting fresh: no order yet, or the previous one was cancelled -
-      // a new item begins a brand new OPEN order rather than reviving the
-      // cancelled one.
-      const items = existing?.status === "OPEN" ? { ...existing.items } : {};
+      // Starting fresh: no order yet, or the previous one was cancelled or
+      // completed (paid) - a new item begins a brand new OPEN order (with
+      // its own new orderReference) rather than reviving the old one.
+      const isContinuing = existing?.status === "OPEN";
+      const items = isContinuing ? { ...existing.items } : {};
+      const orderReference = isContinuing ? existing.orderReference : crypto.randomUUID();
       if (quantity <= 0) {
         delete items[itemId];
       } else {
         items[itemId] = quantity;
       }
-      return { ...prev, [selectedTable]: { status: "OPEN", items } };
+      return { ...prev, [selectedTable]: { status: "OPEN", items, orderReference } };
     });
   }
 
@@ -124,12 +130,27 @@ export function TablesPage() {
     toast.success(`Table ${tableNumber} marked as ${next === "AVAILABLE" ? "available" : "occupied"}.`);
   }
 
-  function handleStartNewOrder() {
-    if (selectedTable === null) return;
-    setOrdersByTable((prev) => ({ ...prev, [selectedTable]: { status: "OPEN", items: {} } }));
+  function handleOpenQrPayment() {
     setIsBillOpen(false);
-    setIsOrderPanelOpen(false);
-    setSelectedTable(null);
+    setIsQrPaymentOpen(true);
+  }
+
+  // Called once by QrPaymentModal when its payment reaches PAID. Marks the
+  // order COMPLETED (not deleted, for a future order-history view) rather
+  // than resetting it immediately - the modal itself stays open showing
+  // "Payment Successful" until the Waiter closes it. Once COMPLETED,
+  // currentQuantities already reads as empty (same mechanism as a
+  // CANCELLED order - see EMPTY_QUANTITIES above), so the table is
+  // immediately ready for its next order with no further state to reset.
+  // Table availability is untouched - it's the Waiter's own separate,
+  // manual control (see types/order.ts).
+  function handlePaymentSuccess() {
+    if (selectedTable === null) return;
+    setOrdersByTable((prev) => {
+      const existing = prev[selectedTable];
+      if (!existing) return prev;
+      return { ...prev, [selectedTable]: { ...existing, status: "COMPLETED" } };
+    });
   }
 
   function handleConfirmCancelOrder() {
@@ -225,7 +246,17 @@ export function TablesPage() {
           tableNumber={selectedTable}
           lines={currentLines}
           onClose={() => setIsBillOpen(false)}
-          onStartNewOrder={handleStartNewOrder}
+          onPayByQr={handleOpenQrPayment}
+        />
+      )}
+
+      {isQrPaymentOpen && currentOrder && (
+        <QrPaymentModal
+          tableNumber={selectedTable}
+          orderReference={currentOrder.orderReference}
+          lines={currentLines}
+          onClose={() => setIsQrPaymentOpen(false)}
+          onPaymentSuccess={handlePaymentSuccess}
         />
       )}
 
